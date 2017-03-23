@@ -33,8 +33,8 @@ def extract_data(filename, num_images):
         bytestream.read(16)
         buf = bytestream.read(28*28)
         data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-        data = (data / PIXEL_DEPTH) - 0.5
-        data = data.reshape(num_images, IMAGE_SIZE, IMAGE_SIZE, 1)
+        data = (data / 255) - 0.5
+        data = data.reshape(num_images, 28, 28, 1)
         return data
 
 def extract_labels(filename, num_images):
@@ -54,7 +54,7 @@ class MNIST:
                      "t10k-labels-idx1-ubyte.gz"]
             for name in files:
 
-                urllib.request.urlretrieve('http://yann.lecun.com/exdb/mnist/'_URL + name, "data/"+name)
+                urllib.request.urlretrieve('http://yann.lecun.com/exdb/mnist/' + name, "data/"+name)
 
         train_data = extract_data("data/train-images-idx3-ubyte.gz", 60000)
         train_labels = extract_labels("data/train-labels-idx1-ubyte.gz", 60000)
