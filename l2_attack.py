@@ -145,6 +145,10 @@ class CarliniL2:
         Run the attack on a batch of images and labels.
         """
         def compare(x,y):
+            if not isinstance(x, (float, int, np.int64)):
+                x = np.copy(x)
+                x[y] -= self.CONFIDENCE
+                x = np.argmax(x)
             if self.TARGETED:
                 return x == y
             else:
@@ -203,10 +207,10 @@ class CarliniL2:
 
                 # adjust the best result found so far
                 for e,(l2,sc,ii) in enumerate(zip(l2s,scores,nimg)):
-                    if l2 < bestl2[e] and (compare(np.argmax(sc), np.argmax(batchlab[e]))):
+                    if l2 < bestl2[e] and compare(sc, np.argmax(batchlab[e])):
                         bestl2[e] = l2
                         bestscore[e] = np.argmax(sc)
-                    if l2 < o_bestl2[e] and (compare(np.argmax(sc), np.argmax(batchlab[e]))):
+                    if l2 < o_bestl2[e] and compare(sc, np.argmax(batchlab[e])):
                         o_bestl2[e] = l2
                         o_bestscore[e] = np.argmax(sc)
                         o_bestattack[e] = ii
