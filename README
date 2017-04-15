@@ -44,4 +44,4 @@ And finally to test the attacks
 python3 test_attack.py
 
 
-This code is provided under the GPLv3, Copyright 2016 to Nicholas Carlini.
+This code is provided under the BSD 2-Clause, Copyright 2016 to Nicholas Carlini.
