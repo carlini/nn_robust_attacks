@@ -1,3 +1,10 @@
+## test_attack.py -- sample code to test attack procedure
+##
+## Copyright (C) 2016, Nicholas Carlini <nicholas@carlini.com>.
+##
+## This program is licenced under the BSD 2-Clause licence,
+## contained in the LICENCE file in this directory.
+
 import tensorflow as tf
 import numpy as np
 import time

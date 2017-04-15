@@ -1,3 +1,10 @@
+## verify.py -- check the accuracy of a neural network
+##
+## Copyright (C) 2016, Nicholas Carlini <nicholas@carlini.com>.
+##
+## This program is licenced under the BSD 2-Clause licence,
+## contained in the LICENCE file in this directory.
+
 from setup_cifar import CIFAR, CIFARModel
 from setup_mnist import MNIST, MNISTModel
 from setup_inception import ImageNet, InceptionModel
