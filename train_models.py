@@ -99,7 +99,7 @@ def train_distillation(data, file_name, params, num_epochs=50, batch_size=128, t
                     init=file_name+"_init")
 
     # and finally we predict at temperature 1
-    predicted = teacher.predict(data.train_data)
+    predicted = student.predict(data.train_data)
 
     print(predicted)
     
