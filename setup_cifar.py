@@ -1,5 +1,5 @@
 ## setup_cifar.py -- cifar data and model loading code
-##
+#
 ## Copyright (C) 2016, Nicholas Carlini <nicholas@carlini.com>.
 ##
 ## This program is licenced under the BSD 2-Clause licence,
@@ -12,13 +12,14 @@ import os
 import pickle
 import gzip
 import pickle
-import urllib.request
-
+#import urllib.request
+import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras.utils import np_utils
 from keras.models import load_model
+from keras.datasets import cifar10
 
 def load_batch(fpath, label_key='labels'):
     f = open(fpath, 'rb')
@@ -60,31 +61,19 @@ def load_batch(fpath):
 
 class CIFAR:
     def __init__(self):
-        train_data = []
-        train_labels = []
-        
-        if not os.path.exists("cifar-10-batches-bin"):
-            urllib.request.urlretrieve("https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz",
-                                       "cifar-data.tar.gz")
-            os.popen("tar -xzf cifar-data.tar.gz").read()
-            
-
-        for i in range(5):
-            r,s = load_batch("cifar-10-batches-bin/data_batch_"+str(i+1)+".bin")
-            train_data.extend(r)
-            train_labels.extend(s)
-            
-        train_data = np.array(train_data,dtype=np.float32)
-        train_labels = np.array(train_labels)
-        
-        self.test_data, self.test_labels = load_batch("cifar-10-batches-bin/test_batch.bin")
-        
+        (train_data, train_labels), (x_test, y_test) = cifar10.load_data()
+        train_data = train_data / 255.0 - 0.5
+        x_test= x_test / 255.0 - 0.5
+        num_classes = 10
         VALIDATION_SIZE = 5000
-        
+        train_labels = keras.utils.to_categorical(train_labels, num_classes)
+        self.test_labels = keras.utils.to_categorical(y_test, num_classes)
+        self.test_data = x_test
         self.validation_data = train_data[:VALIDATION_SIZE, :, :, :]
         self.validation_labels = train_labels[:VALIDATION_SIZE]
         self.train_data = train_data[VALIDATION_SIZE:, :, :, :]
         self.train_labels = train_labels[VALIDATION_SIZE:]
+        
 
 class CIFARModel:
     def __init__(self, restore, session=None):
