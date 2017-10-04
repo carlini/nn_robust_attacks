@@ -14,18 +14,25 @@ import numpy as np
 
 BATCH_SIZE = 1
 
-with tf.Session() as sess:
-    data, model = MNIST(), MNISTModel("models/mnist", sess)
-    data, model = CIFAR(), CIFARModel("models/cifar", sess)
-    data, model = ImageNet(), InceptionModel(sess)
+#Don't hog GPU
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+sess = tf.Session(config=config)
+keras.backend.set_session(sess)
 
-    x = tf.placeholder(tf.float32, (None, model.image_size, model.image_size, model.num_channels))
-    y = model.predict(x)
+iteration_tuple =[
+	(MNIST(), MNISTModel("models/mnist", sess))
+	,(CIFAR(), CIFARModel("models/cifar", sess))
+	, ImageNet(), InceptionModel(sess)]
 
-    r = []
-    for i in range(0,len(data.test_data),BATCH_SIZE):
-        pred = sess.run(y, {x: data.test_data[i:i+BATCH_SIZE]})
-        #print(pred)
-        #print('real',data.test_labels[i],'pred',np.argmax(pred))
-        r.append(np.argmax(pred,1) == np.argmax(data.test_labels[i:i+BATCH_SIZE],1))
-        print(np.mean(r))
+for data, model in iteration_tuple:
+	x = tf.placeholder(tf.float32, (None, model.image_size, model.image_size, model.num_channels))
+	y = model.predict(x)
+
+	r = []
+	for i in range(0,len(data.test_data),BATCH_SIZE):
+		pred = sess.run(y, {x: data.test_data[i:i+BATCH_SIZE]})
+		#print(pred)
+		#print('real',data.test_labels[i],'pred',np.argmax(pred))
+		r.append(np.argmax(pred,1) == np.argmax(data.test_labels[i:i+BATCH_SIZE],1))
+		print(np.mean(r))
