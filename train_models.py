@@ -1,125 +1,112 @@
-## train_models.py -- train the neural network models for attacking
-##
-## Copyright (C) 2016, Nicholas Carlini <nicholas@carlini.com>.
-##
-## This program is licenced under the BSD 2-Clause licence,
-## contained in the LICENCE file in this directory.
-
-import keras
 import numpy as np
 
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-from keras.optimizers import SGD
+import keras
+from keras.models import load_model
+from tensorflow.python.platform import app
+from keras.utils import np_utils
 
-import tensorflow as tf
-from setup_mnist import MNIST
-from setup_cifar import CIFAR
+from Models import cnn, sota
+import helpers
 import os
 
-# Don't hog GPU
-config = tf.ConfigProto()
-config.gpu_options.allow_growth=True
-sess = tf.Session(config=config)
-keras.backend.set_session(sess)
+import tensorflow as tf
+from tensorflow.python.platform import flags
 
-if keras.backend.image_dim_ordering() != 'th':
-		keras.backend.set_image_dim_ordering('th')
+FLAGS = flags.FLAGS
+flags.DEFINE_integer('nb_epochs', 200, 'Number of epochs')
+flags.DEFINE_integer('batch_size', 16, 'Batch size')
+flags.DEFINE_string('mode', 'train', '(train,test,finetune)')
+flags.DEFINE_string('dataset', 'cifar100', '(cifar100,svhn,mnist)')
+flags.DEFINE_float('learning_rate', 0.01 ,'Learning rate for classifier')
+flags.DEFINE_string('save_here', 'saved_model', 'Path where model is to be saved')
 
 
-def train(data, file_name, params, num_epochs=50, batch_size=16, train_temp=1, init=None):
-    """
-    Standard neural network training procedure.
-    """
-    model = Sequential()
+def train_logit_proxy(X_train, Y_train, nb_classes, learning_rate, shape, num_epochs=100, train_temp=1):
+	# As defined here: https://github.com/dribnet/kerosene/blob/master/examples/cifar100.py
+	model = Sequential()
+	model.add(Convolution2D(32, 3, 3, border_mode='same',
+			input_shape=(shape[0], shape[1], shape[2])))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(32, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.4))
+	model.add(Convolution2D(64, 3, 3, border_mode='same'))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(64, 3, 3))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Dropout(0.3))
+	model.add(Flatten())
+	model.add(Dense(512))
+	model.add(Activation('relu'))
+	model.add(Dropout(0.2))
+	model.add(Dense(nb_classes))
 
-    print(data.train_data.shape)
-
-    model.add(Conv2D(params[0], (3, 3),
-                            input_shape=data.train_data.shape[1:]))
-    model.add(Activation('relu'))
-    model.add(Conv2D(params[1], (3, 3)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Conv2D(params[2], (3, 3)))
-    model.add(Activation('relu'))
-    model.add(Conv2D(params[3], (3, 3)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Flatten())
-    model.add(Dense(params[4]))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(params[5]))
-    model.add(Activation('relu'))
-    model.add(Dense(10))
-
-    if init != None:
-        model.load_weights(init)
-
-    def fn(correct, predicted):
+	def fn(correct, predicted):
         return tf.nn.softmax_cross_entropy_with_logits(labels=correct,
                                                        logits=predicted/train_temp)
 
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-
-    model.compile(loss=fn,
+	sgd = SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
+	model.compile(loss=fn,
                   optimizer=sgd,
                   metrics=['accuracy'])
 
-    model.fit(data.train_data, data.train_labels,
-              batch_size=batch_size,
+	model.fit(data.train_data, data.train_labels,
+              batch_size=16,
               validation_split=0.2,
-              epochs=num_epochs,
-              shuffle=True)
+              epochs=num_epochs,)
 
-    if file_name != None:
-        model.save(file_name)
+	return model
 
-    return model
 
-def train_distillation(data, file_name, params, num_epochs=50, batch_size=16, train_temp=1):
-    """
+def main(argv=None):
+	"""
     Train a network using defensive distillation.
 
     Distillation as a Defense to Adversarial Perturbations against Deep Neural Networks
     Nicolas Papernot, Patrick McDaniel, Xi Wu, Somesh Jha, Ananthram Swami
     IEEE S&P, 2016.
     """
-    if not os.path.exists(file_name+"_init"):
-        # Train for one epoch to get a good starting point.
-        train(data, file_name+"_init", params, 1, batch_size)
+	n_classes = 10
+	shape = (3, 32, 32)
+	tf.set_random_seed(1234)
 
-    # now train the teacher at the given temperature
-    teacher = train(data, file_name+"_teacher", params, num_epochs, batch_size, train_temp,
-                    init=file_name+"_init")
+	if FLAGS.dataset == 'cifar100':
+		n_classes = 100
+	elif FLAGS.dataset == 'mnist':
+		shape = (1, 28, 28)
+	elif FLAGS.dataset == 'svhn':
+		pass
+	else:
+		print "Invalid dataset specified. Exiting"
+		exit()
 
-    # evaluate the labels at temperature t
-    predicted = teacher.predict(data.train_data)
-    with tf.Session() as sess:
-        y = sess.run(tf.nn.softmax(predicted/train_temp))
-        print(y)
-        data.train_labels = y
+	# Image dimensions ordering should follow the Theano convention
+	if keras.backend.image_dim_ordering() != 'th':
+		keras.backend.set_image_dim_ordering('th')
+
+	#Don't hog GPU
+	config = tf.ConfigProto()
+	config.gpu_options.allow_growth=True
+	sess = tf.Session(config=config)
+	keras.backend.set_session(sess)
+
+	# evaluate the labels (normal model with softmax; temperature=1)
+    predicted = teacher.predict(X_train)
+    # Y_train = sess.run(tf.nn.softmax(predicted/train_temp))
+    Y_train = predicted
 
     # train the student model at temperature t
-    student = train(data, file_name, params, num_epochs, batch_size, train_temp,
-                    init=file_name+"_init")
+    student = train_logit_proxy(X_train, Y_train, n_classes, FLAGS.learning_rate. shape, FLAGS.nb_epochs, train_data)
 
     # and finally we predict at temperature 1
     predicted = student.predict(data.train_data)
 
     print(predicted)
 
-if not os.path.isdir('models'):
-    os.makedirs('models')
+    # save student model
+    student.save(FLAGS.save_here)
 
-train(CIFAR(), "models/cifar", [64, 64, 128, 128, 256, 256], num_epochs=50)
-train(MNIST(), "models/mnist", [32, 32, 64, 64, 200, 200], num_epochs=50)
-
-train_distillation(MNIST(), "models/mnist-distilled-100", [32, 32, 64, 64, 200, 200],
-                   num_epochs=50, train_temp=100)
-train_distillation(CIFAR(), "models/cifar-distilled-100", [64, 64, 128, 128, 256, 256],
-                   num_epochs=50, train_temp=100)
+if __name__ == '__main__':
+	app.run()

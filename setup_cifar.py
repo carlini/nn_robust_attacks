@@ -16,16 +16,16 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras.utils import np_utils
 from keras.models import load_model
 
-from keras.datasets import cifar100
+from keras.datasets import cifar10
 from keras.utils import np_utils
 
 class CIFAR:
     def __init__(self):
 	img_rows = 32
 	img_cols = 32
-	nb_classes = 100
+	nb_classes = 10
 	# the data, shuffled and split between train and test sets
-	(X_train, y_train), (X_test, y_test) = cifar100.load_data()
+	(X_train, y_train), (X_test, y_test) = cifar10.load_data()
 	X_train = X_train.reshape(X_train.shape[0], 3, img_rows, img_cols)
 	X_test = X_test.reshape(X_test.shape[0], 3, img_rows, img_cols)
 	X_train = X_train.astype('float32')
