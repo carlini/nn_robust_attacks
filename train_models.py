@@ -44,30 +44,30 @@ def train_logit_proxy(X_train, Y_train, nb_classes, learning_rate, shape, num_ep
 	model.add(Dense(nb_classes))
 
 	def fn(correct, predicted):
-        return tf.nn.softmax_cross_entropy_with_logits(labels=correct,
-                                                       logits=predicted/train_temp)
+		return tf.nn.softmax_cross_entropy_with_logits(labels=correct,
+													   logits=predicted/train_temp)
 
 	sgd = SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
 	model.compile(loss=fn,
-                  optimizer=sgd,
-                  metrics=['accuracy'])
+				  optimizer=sgd,
+				  metrics=['accuracy'])
 
 	model.fit(data.train_data, data.train_labels,
-              batch_size=16,
-              validation_split=0.2,
-              epochs=num_epochs,)
+			  batch_size=16,
+			  validation_split=0.2,
+			  epochs=num_epochs,)
 
 	return model
 
 
 def main(argv=None):
 	"""
-    Train a network using defensive distillation.
+	Train a network using defensive distillation.
 
-    Distillation as a Defense to Adversarial Perturbations against Deep Neural Networks
-    Nicolas Papernot, Patrick McDaniel, Xi Wu, Somesh Jha, Ananthram Swami
-    IEEE S&P, 2016.
-    """
+	Distillation as a Defense to Adversarial Perturbations against Deep Neural Networks
+	Nicolas Papernot, Patrick McDaniel, Xi Wu, Somesh Jha, Ananthram Swami
+	IEEE S&P, 2016.
+	"""
 	n_classes = 10
 	shape = (3, 32, 32)
 	tf.set_random_seed(1234)
@@ -93,20 +93,20 @@ def main(argv=None):
 	keras.backend.set_session(sess)
 
 	# evaluate the labels (normal model with softmax; temperature=1)
-    predicted = teacher.predict(X_train)
-    # Y_train = sess.run(tf.nn.softmax(predicted/train_temp))
-    Y_train = predicted
+	predicted = teacher.predict(X_train)
+	# Y_train = sess.run(tf.nn.softmax(predicted/train_temp))
+	Y_train = predicted
 
-    # train the student model at temperature t
-    student = train_logit_proxy(X_train, Y_train, n_classes, FLAGS.learning_rate. shape, FLAGS.nb_epochs, train_data)
+	# train the student model at temperature t
+	student = train_logit_proxy(X_train, Y_train, n_classes, FLAGS.learning_rate. shape, FLAGS.nb_epochs, train_data)
 
-    # and finally we predict at temperature 1
-    predicted = student.predict(data.train_data)
+	# and finally we predict at temperature 1
+	predicted = student.predict(data.train_data)
 
-    print(predicted)
+	print(predicted)
 
-    # save student model
-    student.save(FLAGS.save_here)
+	# save student model
+	student.save(FLAGS.save_here)
 
 if __name__ == '__main__':
 	app.run()

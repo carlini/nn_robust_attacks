@@ -20,7 +20,7 @@ from keras.datasets import cifar10
 from keras.utils import np_utils
 
 class CIFAR:
-    def __init__(self):
+	def __init__(self):
 	img_rows = 32
 	img_cols = 32
 	nb_classes = 10
@@ -40,37 +40,38 @@ class CIFAR:
 	self.test_data = X_test
 	self.test_labels = Y_test
 
+
 class CIFARModel:
-    def __init__(self, restore, session=None):
-        self.num_channels = 3
-        self.image_size = 32
-        self.num_labels = 10
+	def __init__(self, restore, session=None):
+		self.num_channels = 3
+		self.image_size = 32
+		self.num_labels = 10
 
-        model = Sequential()
+		model = Sequential()
 
-        model.add(Conv2D(64, (3, 3),
-                                input_shape=(32, 32, 3)))
-        model.add(Activation('relu'))
-        model.add(Conv2D(64, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+		model.add(Conv2D(64, (3, 3),
+								input_shape=(32, 32, 3)))
+		model.add(Activation('relu'))
+		model.add(Conv2D(64, (3, 3)))
+		model.add(Activation('relu'))
+		model.add(MaxPooling2D(pool_size=(2, 2)))
 
-        model.add(Conv2D(128, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(Conv2D(128, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+		model.add(Conv2D(128, (3, 3)))
+		model.add(Activation('relu'))
+		model.add(Conv2D(128, (3, 3)))
+		model.add(Activation('relu'))
+		model.add(MaxPooling2D(pool_size=(2, 2)))
 
-        model.add(Flatten())
-        model.add(Dense(256))
-        model.add(Activation('relu'))
-        model.add(Dense(256))
-        model.add(Activation('relu'))
-        model.add(Dense(10))
+		model.add(Flatten())
+		model.add(Dense(256))
+		model.add(Activation('relu'))
+		model.add(Dense(256))
+		model.add(Activation('relu'))
+		model.add(Dense(10))
 
-        model.load_weights(restore)
+		model.load_weights(restore)
 
-        self.model = model
+		self.model = model
 
-    def predict(self, data):
-        return self.model(data)
+	def predict(self, data):
+		return self.model(data)
