@@ -5,8 +5,9 @@
 ## This program is licenced under the BSD 2-Clause licence,
 ## contained in the LICENCE file in this directory.
 
-
+import keras
 import numpy as np
+
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
@@ -17,14 +18,24 @@ from setup_mnist import MNIST
 from setup_cifar import CIFAR
 import os
 
-def train(data, file_name, params, num_epochs=50, batch_size=128, train_temp=1, init=None):
+# Don't hog GPU
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+sess = tf.Session(config=config)
+keras.backend.set_session(sess)
+
+if keras.backend.image_dim_ordering() != 'th':
+		keras.backend.set_image_dim_ordering('th')
+
+
+def train(data, file_name, params, num_epochs=50, batch_size=16, train_temp=1, init=None):
     """
     Standard neural network training procedure.
     """
     model = Sequential()
 
     print(data.train_data.shape)
-    
+
     model.add(Conv2D(params[0], (3, 3),
                             input_shape=data.train_data.shape[1:]))
     model.add(Activation('relu'))
@@ -45,7 +56,7 @@ def train(data, file_name, params, num_epochs=50, batch_size=128, train_temp=1, 
     model.add(Dense(params[5]))
     model.add(Activation('relu'))
     model.add(Dense(10))
-    
+
     if init != None:
         model.load_weights(init)
 
@@ -54,24 +65,23 @@ def train(data, file_name, params, num_epochs=50, batch_size=128, train_temp=1, 
                                                        logits=predicted/train_temp)
 
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    
+
     model.compile(loss=fn,
                   optimizer=sgd,
                   metrics=['accuracy'])
-    
+
     model.fit(data.train_data, data.train_labels,
               batch_size=batch_size,
-              validation_data=(data.validation_data, data.validation_labels),
-              nb_epoch=num_epochs,
+              validation_split=0.2,
+              epochs=num_epochs,
               shuffle=True)
-    
 
     if file_name != None:
         model.save(file_name)
 
     return model
 
-def train_distillation(data, file_name, params, num_epochs=50, batch_size=128, train_temp=1):
+def train_distillation(data, file_name, params, num_epochs=50, batch_size=16, train_temp=1):
     """
     Train a network using defensive distillation.
 
@@ -82,7 +92,7 @@ def train_distillation(data, file_name, params, num_epochs=50, batch_size=128, t
     if not os.path.exists(file_name+"_init"):
         # Train for one epoch to get a good starting point.
         train(data, file_name+"_init", params, 1, batch_size)
-    
+
     # now train the teacher at the given temperature
     teacher = train(data, file_name+"_teacher", params, num_epochs, batch_size, train_temp,
                     init=file_name+"_init")
@@ -102,7 +112,7 @@ def train_distillation(data, file_name, params, num_epochs=50, batch_size=128, t
     predicted = student.predict(data.train_data)
 
     print(predicted)
-    
+
 if not os.path.isdir('models'):
     os.makedirs('models')
 
