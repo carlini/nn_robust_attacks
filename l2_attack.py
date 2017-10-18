@@ -22,7 +22,8 @@ class CarliniL2:
                  targeted = TARGETED, learning_rate = LEARNING_RATE,
                  binary_search_steps = BINARY_SEARCH_STEPS, max_iterations = MAX_ITERATIONS,
                  abort_early = ABORT_EARLY, 
-                 initial_const = INITIAL_CONST):
+                 initial_const = INITIAL_CONST,
+                 boxmin = -0.5, boxmax = 0.5):
         """
         The L_2 optimized attack. 
 
@@ -46,6 +47,8 @@ class CarliniL2:
         initial_const: The initial tradeoff-constant to use to tune the relative
           importance of distance and confidence. If binary_search_steps is large,
           the initial constant is not important.
+        boxmin: Minimum pixel value (default -0.5).
+        boxmax: Maximum pixel value (default 0.5).
         """
 
         image_size, num_channels, num_labels = model.image_size, model.num_channels, model.num_labels
@@ -76,14 +79,16 @@ class CarliniL2:
         self.assign_tlab = tf.placeholder(tf.float32, (batch_size,num_labels))
         self.assign_const = tf.placeholder(tf.float32, [batch_size])
         
-        # the resulting image, tanh'd to keep bounded from -0.5 to 0.5
-        self.newimg = tf.tanh(modifier + self.timg)/2
+        # the resulting image, tanh'd to keep bounded from boxmin to boxmax
+        self.boxmul = (boxmax - boxmin) / 2.
+        self.boxplus = (boxmin + boxmax) / 2.
+        self.newimg = tf.tanh(modifier + self.timg) * self.boxmul + self.boxplus
         
         # prediction BEFORE-SOFTMAX of the model
         self.output = model.predict(self.newimg)
         
         # distance to the input data
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg-tf.tanh(self.timg)/2),[1,2,3])
+        self.l2dist = tf.reduce_sum(tf.square(self.newimg-(tf.tanh(self.timg) * self.boxmul + self.boxplus)),[1,2,3])
         
         # compute the probability of the label class versus the maximum other
         real = tf.reduce_sum((self.tlab)*self.output,1)
@@ -147,7 +152,7 @@ class CarliniL2:
         batch_size = self.batch_size
 
         # convert to tanh-space
-        imgs = np.arctanh(imgs*1.999999)
+        imgs = np.arctanh((imgs - self.boxplus) / self.boxmul * 0.999999)
 
         # set the lower and upper bounds accordingly
         lower_bound = np.zeros(batch_size)
