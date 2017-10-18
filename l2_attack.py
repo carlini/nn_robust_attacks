@@ -142,7 +142,10 @@ class CarliniL2:
         def compare(x,y):
             if not isinstance(x, (float, int, np.int64)):
                 x = np.copy(x)
-                x[y] -= self.CONFIDENCE
+                if self.TARGETED:
+                    x[y] -= self.CONFIDENCE
+                else:
+                    x[y] += self.CONFIDENCE
                 x = np.argmax(x)
             if self.TARGETED:
                 return x == y
