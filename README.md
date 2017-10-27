@@ -1,3 +1,5 @@
+### About
+
 Corresponding code to the paper "Towards Evaluating the Robustness of Neural
 Networks" by Nicholas Carlini and David Wagner, at IEEE Symposium on Security &
 Privacy, 2017.
@@ -13,35 +15,45 @@ model should have variables
     model.num_channels: 1 for greyscale, 3 for color images
     model.num_labels: total number of valid labels (e.g., 10 for MNIST/CIFAR)
 
-Run the attacks with
+### Running attacks
 
-    from robust_attacks import CarliniL2
-    CarliniL2(sess, model).attack(inputs, targets)
-
-where inputs are a (batch x height x width x channels) tensor and targets are
-a (batch x classes) tensor. The L2 attack supports a batch_size paramater to
+```python
+     from robust_attacks import CarliniL2
+     CarliniL2(sess, model).attack(inputs, targets)
+```
+where inputs are a (*batch x height x width x channels*) tensor and targets are
+a (*batch x classes*) tensor. The L2 attack supports a batch_size paramater to
 run attacks in parallel. Each attack has many tunable hyper-paramaters. All
 are intuitive and strictly increase attack efficacy in one direction and are
 more efficient in the other direction.
 
+### Pre-requisites
+
 The following steps should be sufficient to get these attacks up and running on
 most Linux-based systems.
 
-sudo apt-get install python3-pip
-sudo pip3 install --upgrade pip
-sudo pip3 install pillow scipy numpy tensorflow-gpu keras h5py
+```bash
+    sudo apt-get install python3-pip
+    sudo pip3 install --upgrade pip
+    sudo pip3 install pillow scipy numpy tensorflow-gpu keras h5py
+```
+   
+#### To create the MNIST/CIFAR models:
 
-To create the MNIST/CIFAR models:
-
+```bash
 python3 train_models.py
+```
 
-To download the inception model:
+#### To download the inception model:
 
+```bash
 python3 setup_inception.py
+```
 
-And finally to test the attacks
+#### And finally to test the attacks
 
+```bash
 python3 test_attack.py
-
+```
 
 This code is provided under the BSD 2-Clause, Copyright 2016 to Nicholas Carlini.
