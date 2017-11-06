@@ -4,6 +4,7 @@
 ##
 ## This program is licenced under the BSD 2-Clause licence,
 ## contained in the LICENCE file in this directory.
+from __future__ import print_function
 
 import sys
 import tensorflow as tf
