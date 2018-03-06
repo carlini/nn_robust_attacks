@@ -158,7 +158,7 @@ class CarliniL0:
                     # perform the update step
                     _, works = sess.run([train, loss1], feed_dict=feed_dict)
                         
-                    if works < .0001 and (self.ABORT_EARLY or step == CONST-1):
+                    if works < .0001 and self.ABORT_EARLY:
                         # it worked previously, restore the old value and finish
                         self.sess.run(set_modifier, {assign_modifier: oldmodifier})
                         grads, scores, nimg = sess.run((outgrad, output,newimg),

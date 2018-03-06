@@ -132,7 +132,7 @@ class CarliniLi:
                     _, works = sess.run([train, loss], feed_dict=feed_dict)
     
                     # it worked
-                    if works < .0001*CONST and (self.ABORT_EARLY or step == CONST-1):
+                    if works < .0001*CONST and self.ABORT_EARLY:
                         get = sess.run(output, feed_dict=feed_dict)
                         works = compare(np.argmax(get), np.argmax(labs))
                         if works:
