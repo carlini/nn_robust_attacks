@@ -194,8 +194,13 @@ class CarliniL0:
         # the previous image
         prev = np.copy(img).reshape((1,self.model.image_size,self.model.image_size,
                                      self.model.num_channels))
+
+        # initially set the solution to None, if we can't find an adversarial
+        # example then we will return None as the solution.
         last_solution = None
         const = self.INITIAL_CONST
+
+        equal_count = None
     
         while True:
             # try to solve given this valid map
