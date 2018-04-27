@@ -64,6 +64,8 @@ class CarliniL2:
 
         self.repeat = binary_search_steps >= 10
 
+        self.I_KNOW_WHAT_I_AM_DOING_AND_WANT_TO_OVERRIDE_THE_PRESOFTMAX_CHECK = False
+
         shape = (batch_size,image_size,image_size,num_channels)
         
         # the variable we're going to optimize over
@@ -193,6 +195,11 @@ class CarliniL2:
                                                          self.l2dist, self.output, 
                                                          self.newimg])
 
+                if np.all(scores>=-.0001) and np.all(scores <= 1.0001):
+                    if np.allclose(np.sum(scores,axis=1), 1.0, atol=1e-3):
+                        if not self.I_KNOW_WHAT_I_AM_DOING_AND_WANT_TO_OVERRIDE_THE_PRESOFTMAX_CHECK:
+                            raise Exception("The output of model.predict should return the pre-softmax layer. It looks like you are returning the probability vector (post-softmax). If you are sure you want to do that, set attack.I_KNOW_WHAT_I_AM_DOING_AND_WANT_TO_OVERRIDE_THE_PRESOFTMAX_CHECK = True")
+                
                 # print out the losses every 10%
                 if iteration%(self.MAX_ITERATIONS//10) == 0:
                     print(iteration,self.sess.run((self.loss,self.loss1,self.loss2)))

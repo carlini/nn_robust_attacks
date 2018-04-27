@@ -62,6 +62,8 @@ class CarliniL0:
         self.const_factor = const_factor
         self.independent_channels = independent_channels
 
+        self.I_KNOW_WHAT_I_AM_DOING_AND_WANT_TO_OVERRIDE_THE_PRESOFTMAX_CHECK = False
+
         self.grad = self.gradient_descent(sess, model)
 
     def gradient_descent(self, sess, model):
@@ -156,13 +158,19 @@ class CarliniL0:
                         print(step,*sess.run((loss1,loss2),feed_dict=feed_dict))
 
                     # perform the update step
-                    _, works = sess.run([train, loss1], feed_dict=feed_dict)
-                        
+                    _, works, scores = sess.run([train, loss1, output], feed_dict=feed_dict)
+
+                    if np.all(scores>=-.0001) and np.all(scores <= 1.0001):
+                        if np.allclose(np.sum(scores,axis=1), 1.0, atol=1e-3):
+                            if not self.I_KNOW_WHAT_I_AM_DOING_AND_WANT_TO_OVERRIDE_THE_PRESOFTMAX_CHECK:
+                                raise Exception("The output of model.predict should return the pre-softmax layer. It looks like you are returning the probability vector (post-softmax). If you are sure you want to do that, set attack.I_KNOW_WHAT_I_AM_DOING_AND_WANT_TO_OVERRIDE_THE_PRESOFTMAX_CHECK = True")
+                    
                     if works < .0001 and self.ABORT_EARLY:
                         # it worked previously, restore the old value and finish
                         self.sess.run(set_modifier, {assign_modifier: oldmodifier})
                         grads, scores, nimg = sess.run((outgrad, output,newimg),
                                                        feed_dict=feed_dict)
+
                         l2s=np.square(nimg-np.tanh(imgs)/2).sum(axis=(1,2,3))
                         return grads, scores, nimg, CONST
 
