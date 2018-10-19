@@ -188,7 +188,7 @@ class CarliniL2:
                                        self.assign_tlab: batchlab,
                                        self.assign_const: CONST})
             
-            prev = 1e6
+            prev = np.inf
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack 
                 _, l, l2s, scores, nimg = self.sess.run([self.train, self.loss, 
