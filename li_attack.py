@@ -156,7 +156,7 @@ class CarliniLi:
     
     def attack(self, imgs, targets):
         """
-        Perform the L_0 attack on the given images for the given targets.
+        Perform the L_infinite attack on the given images for the given targets.
 
         If self.targeted is true, then the targets represents the target labels.
         If self.targeted is false, then targets are the original class labels.
