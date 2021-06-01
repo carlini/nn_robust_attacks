@@ -1,0 +1,2 @@
+#please change all "import tensorflow as tf" 
+# with "import tensorflow.compact.v1 as tf
